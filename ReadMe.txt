@@ -9,4 +9,4 @@ Faculty of Information Technology - University of Science - VNUHCM
 
 --------------------
 
-Feel free to use and share my code!
+Feel free to use and share my codes!
