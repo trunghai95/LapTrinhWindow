@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "H.8.1_App", "H.8.1_App\H.8.1_App.vcxproj", "{B0A1756F-B896-4A91-A29F-9E544E48A91C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "H.8.1_DLL", "H.8.1_DLL\H.8.1_DLL.vcxproj", "{17059495-64D0-4006-8101-293CEA9A8208}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0A1756F-B896-4A91-A29F-9E544E48A91C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B0A1756F-B896-4A91-A29F-9E544E48A91C}.Debug|Win32.Build.0 = Debug|Win32
+		{B0A1756F-B896-4A91-A29F-9E544E48A91C}.Release|Win32.ActiveCfg = Release|Win32
+		{B0A1756F-B896-4A91-A29F-9E544E48A91C}.Release|Win32.Build.0 = Release|Win32
+		{17059495-64D0-4006-8101-293CEA9A8208}.Debug|Win32.ActiveCfg = Debug|Win32
+		{17059495-64D0-4006-8101-293CEA9A8208}.Debug|Win32.Build.0 = Debug|Win32
+		{17059495-64D0-4006-8101-293CEA9A8208}.Release|Win32.ActiveCfg = Release|Win32
+		{17059495-64D0-4006-8101-293CEA9A8208}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
