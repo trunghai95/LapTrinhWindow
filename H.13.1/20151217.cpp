@@ -1,13 +1,18 @@
-// 20151217.cpp : Defines the entry point for the application.
+﻿// 20151217.cpp : Defines the entry point for the application.
 //
 
 #include "stdafx.h"
 #include "20151217.h"
 #include <Vfw.h>
+#include <commdlg.h>
+#include <windowsx.h>
 
 #pragma comment(lib, "vfw32.lib")
 
 #define MAX_LOADSTRING 100
+#define STOP 0
+#define PLAY 1
+#define PAUSE 2
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -15,12 +20,17 @@ TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 HWND g_hwndMCIWnd;
 int volume;
+int state;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	DlgProc(HWND, UINT, WPARAM, LPARAM);
+
+bool openFile(HWND hWnd, TCHAR* buffer);
+void enableRWFW(HWND hDlg, bool en);
+void seek(int val);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -165,6 +175,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 // Message handler for about box.
 INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	TCHAR buffer[200];
+
 	LRESULT lResult;
 	UNREFERENCED_PARAMETER(lParam);
 	switch (message)
@@ -176,53 +188,139 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (LOWORD(wParam))
 		{
 		case IDC_BTNOPEN:
-			g_hwndMCIWnd = MCIWndCreate(hDlg,
-				hInst,
-				WS_CHILD | WS_VISIBLE |    // standard styles
-				MCIWNDF_NOPLAYBAR |        // hides toolbar 
-				MCIWNDF_NOTIFYMODE,        // notifies of mode changes
-				L"D:\\sample.wma");
-			volume = MCIWndGetVolume(g_hwndMCIWnd);
-
+			if (openFile(hDlg, buffer))
+			{
+				if (g_hwndMCIWnd != NULL)
+					MCIWndClose(g_hwndMCIWnd);
+				if (g_hwndMCIWnd = MCIWndCreate(hDlg,
+					hInst,
+					WS_CHILD | WS_VISIBLE |    // standard styles
+					MCIWNDF_NOPLAYBAR |        // hides toolbar 
+					MCIWNDF_NOTIFYMODE,        // notifies of mode changes
+					buffer))
+				{
+					SetWindowText(hDlg, buffer);
+					state = STOP;
+					volume = MCIWndGetVolume(g_hwndMCIWnd);
+					EnableWindow(GetDlgItem(hDlg, IDC_BTNPLAY), TRUE);
+					_itow(volume/10, buffer, 10);
+					Edit_SetText(GetDlgItem(hDlg, IDC_EDTVOL), buffer);
+					EnableWindow(GetDlgItem(hDlg, IDC_BTNVOLUP), TRUE);
+					EnableWindow(GetDlgItem(hDlg, IDC_BTNVOLDOWN), TRUE);
+				}
+				else
+				{
+					EnableWindow(GetDlgItem(hDlg, IDC_BTNPLAY), FALSE);
+					EnableWindow(GetDlgItem(hDlg, IDC_BTNVOLUP), FALSE);
+					EnableWindow(GetDlgItem(hDlg, IDC_BTNVOLDOWN), FALSE);
+				}
+				SetDlgItemText(hDlg, IDC_BTNPLAY, L"Play");
+				EnableWindow(GetDlgItem(hDlg, IDC_BTNSTOP), FALSE);
+				EnableWindow(GetDlgItem(hDlg, IDC_BTNRW), FALSE);
+				EnableWindow(GetDlgItem(hDlg, IDC_BTNFW), FALSE);
+			}
+			break;
+		case IDC_BTNPLAY:
+			switch (state)
+			{
+			case STOP:
+				MCIWndPlay(g_hwndMCIWnd);
+				state = PLAY;
+				SetDlgItemText(hDlg, IDC_BTNPLAY, L"Pause");
+				EnableWindow(GetDlgItem(hDlg, IDC_BTNSTOP), TRUE);
+				enableRWFW(hDlg, TRUE);
+				break;
+			case PLAY:
+				MCIWndPause(g_hwndMCIWnd);
+				state = PAUSE;
+				SetDlgItemText(hDlg, IDC_BTNPLAY, L"Resume");
+				enableRWFW(hDlg, FALSE);
+				break;
+			case PAUSE:
+				MCIWndResume(g_hwndMCIWnd);
+				state = PLAY;
+				SetDlgItemText(hDlg, IDC_BTNPLAY, L"Pause");
+				enableRWFW(hDlg, TRUE);
+				break;
+			}
+			break;
+		case IDC_BTNSTOP:
+			MCIWndStop(g_hwndMCIWnd);
+			state = STOP;
+			MCIWndSeek(g_hwndMCIWnd, 0);
+			SetDlgItemText(hDlg, IDC_BTNPLAY, L"Play");
+			EnableWindow(GetDlgItem(hDlg, IDC_BTNSTOP), FALSE);
+			enableRWFW(hDlg, FALSE);
+			break;
+		case IDC_BTNRW:
+			seek(-1000);
 			MCIWndPlay(g_hwndMCIWnd);
 			break;
-		case IDC_BTNPAUSE:              // pauses playback 
-			MCIWndPause(g_hwndMCIWnd);
+		case IDC_BTNFW:
+			seek(1000);
+			MCIWndPlay(g_hwndMCIWnd);
 			break;
-		case IDC_BTNRESUME:          // resumes playback 
-			MCIWndChangeStyles(      // hides error dialog messages
-				g_hwndMCIWnd,        // MCIWnd window
-				MCIWNDF_NOERRORDLG,  // mask of style to change
-				MCIWNDF_NOERRORDLG); // suppresses MCI error dialogs 
-
-			lResult = MCIWndResume(g_hwndMCIWnd);
-			
-
-			if (lResult){                   // device doesn't resume 
-				/*MessageBox(hwnd, "MCIWnd",
-					"Resume with Stop and Play", MB_OK);*/
-				MCIWndStop(g_hwndMCIWnd);
-				MCIWndPlay(g_hwndMCIWnd);
-
-				MCIWndChangeStyles(        // resumes original styles
-					g_hwndMCIWnd,
-					MCIWNDF_NOERRORDLG,
-					NULL);
-			}
 		case IDC_BTNVOLUP:
-			volume += 10;
+			volume += 50;
+			if (volume > 1000) volume = 1000;
 			MCIWndSetVolume(g_hwndMCIWnd, volume);
+			_itow(volume/10, buffer, 10);
+			Edit_SetText(GetDlgItem(hDlg, IDC_EDTVOL), buffer);
 			break;
 		case IDC_BTNVOLDOWN:
-			volume -= 10;
+			volume -= 50;
+			if (volume < 0) volume = 0;
 			MCIWndSetVolume(g_hwndMCIWnd, volume);
+			_itow(volume/10, buffer, 10);
+			Edit_SetText(GetDlgItem(hDlg, IDC_EDTVOL), buffer);
 			break;
 		}
 		break;
 
 	case WM_CLOSE:
+		if (g_hwndMCIWnd)
+			MCIWndDestroy(g_hwndMCIWnd);
 		PostQuitMessage(0);
 		break;
 	}
 	return (INT_PTR)FALSE;
+}
+
+bool openFile(HWND hWnd, TCHAR* buffer)
+{
+	OPENFILENAME ofn; // CTDL dùng cho dialog open
+	TCHAR szFile[256];
+	TCHAR szFilter[] = TEXT("Media files\0 *.avi;*.wma;*.wmv;*.mp3\0");
+	szFile[0] = '\0';
+	// Khởi tạo struct
+	ZeroMemory(&ofn, sizeof(OPENFILENAME));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = hWnd; // handle của window cha
+	ofn.lpstrFilter = szFilter;
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFile = szFile; // chuỗi tên file trả về
+	ofn.nMaxFile = sizeof(szFile);
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+	if (GetOpenFileName(&ofn)) {
+		memcpy(buffer, ofn.lpstrFile, (wcslen(ofn.lpstrFile) + 1) * sizeof(TCHAR)); // xử lý mở file
+		return true;
+	}
+	else
+		return false;
+}
+
+void enableRWFW(HWND hDlg, bool en)
+{
+	EnableWindow(GetDlgItem(hDlg, IDC_BTNRW), en);
+	EnableWindow(GetDlgItem(hDlg, IDC_BTNFW), en);
+}
+
+void seek(int dis)
+{
+	int pos = MCIWndGetPosition(g_hwndMCIWnd);
+	pos += dis;
+	int len = MCIWndGetLength(g_hwndMCIWnd);
+	if (pos > len) pos = len;
+	if (pos < 0) pos = 0;
+	MCIWndSeek(g_hwndMCIWnd, pos);
 }
